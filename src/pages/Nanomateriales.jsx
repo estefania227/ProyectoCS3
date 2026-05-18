@@ -1,66 +1,90 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { api } from "../services/api";
 
 function Nanomateriales() {
-  const [materiales, setMateriales] = useState([
-    {
-      id: 1,
-      nombre: "Nanopartículas de oro",
-      descripcion: "Uso: Pruebas de embarazo, COVID y VIH.",
-      activo: true
-    },
-    {
-      id: 2,
-      nombre: "Nanopartículas de plata",
-      descripcion: "Uso: Antibacterianas",
-      activo: true
+
+  const [nanomateriales, setNanomateriales] = useState([]);
+  const [nombre, setNombre] = useState("");
+  const [descripcion, setDescripcion] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    cargarNanomateriales();
+  }, []);
+
+  const cargarNanomateriales = async () => {
+    try {
+      const res = await api.get("/nanomateriales");
+      setNanomateriales(res.data);
+    } catch (error) {
+      alert("Error");
+    } finally {
+      setLoading(false);
     }
-  ]);
+  };
 
-  const toggleEstado = (id) => {
-    const actualizados = materiales.map((m) =>
-      m.id === id ? { ...m, activo: !m.activo } : m
-    );
+  const crearNanomaterial = async (e) => {
+    e.preventDefault();
 
-    setMateriales(actualizados);
+    try {
+      await api.post("/nanomateriales", {
+        nombre,
+        descripcion
+      });
+      setNombre("");
+      setDescripcion("");
+      cargarNanomateriales();
+    } catch (error) {
+      alert("No se puede registrar el nanomaterial");
+    }
   };
 
   return (
     <div className="container mt-4">
 
-      <h2>Nanomateriales</h2>
+      <h2 className="mb-4">Nanomateriales</h2>
 
-      <div className="row">
+      {}
+      <form className="card p-3 mb-4 shadow" onSubmit={crearNanomaterial}>
+        <input
+          className="form-control mb-2"
+          placeholder="Nombre"
+          value={nombre}
+          onChange={(e) => setNombre(e.target.value)}
+          required
+        />
 
-        {materiales.map((m) => (
-          <div className="col-md-6 mb-3" key={m.id}>
-            <div className="card p-3 shadow">
+        <textarea
+          className="form-control mb-2"
+          placeholder="Descripción"
+          value={descripcion}
+          onChange={(e) => setDescripcion(e.target.value)}
+          required
+        />
 
-              <h5>{m.nombre}</h5>
+        <button className="btn btn-dark w-100">
+          Registrar
+        </button>
 
-              <p>{m.descripcion}</p>
+      </form>
 
-              <p>
-                Estado:{" "}
-                <span className={m.activo ? "badge bg-success" : "badge bg-danger"}>
-                  {m.activo ? "Activo" : "Inactivo"}
-                </span>
-              </p>
+      {}
+      {loading ? (
+        <p>Listar nanomateriales</p>
+      ) : (
+        <div className="row">
 
-              <button
-                className="btn btn-warning btn-sm"
-                onClick={() => toggleEstado(m.id)}
-              >
-                Activar / Inactivar
-              </button>
+          {nanomateriales.map((n) => (
+            <div className="col-md-4 mb-3" key={n.id}>
 
-            </div>
-          </div>
-        ))}
-
-      </div>
-
-    </div>
-  );
-}
+              <div className="card p-3 shadow">
+                <h5>{n.nombre}</h5>
+                <p>{n.descripcion}</p>
+              </div>
+            </div>))}
+        </div>
+      )}
+    </div>);
+    }
 
 export default Nanomateriales;

@@ -1,39 +1,56 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { api } from "../services/api";
 
 function Reactivos() {
-  const [reactivos, setReactivos] = useState([
-    { id: 1, nombre: "Ácidos", stock: 10, vencimiento: "2026-12-01" },
-    { id: 2, nombre: "Hidróxidos", stock: 5, vencimiento: "2025-06-10" }
-  ]);
+  const [reactivos, setReactivos] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const [nombre, setNombre] = useState("");
   const [stock, setStock] = useState("");
   const [vencimiento, setVencimiento] = useState("");
 
-  const agregarReactivo = (e) => {
+  useEffect(() => {
+    cargarReactivos();
+  }, []);
+
+  const cargarReactivos = async () => {
+    try {
+      const res = await api.get("/reactivos");
+      setReactivos(res.data);
+    } catch (error) {
+      alert("Error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const agregarReactivo = async (e) => {
     e.preventDefault();
 
-    const nuevo = {
-      id: Date.now(),
-      nombre,
-      stock: Number(stock),
-      vencimiento
-    };
+    try {
+      await api.post("/reactivos", {
+        nombre,
+        stock,
+        vencimiento
+      });
 
-    setReactivos([...reactivos, nuevo]);
+      cargarReactivos();
 
-    setNombre("");
-    setStock("");
-    setVencimiento("");
+      setNombre("");
+      setStock("");
+      setVencimiento("");
+    } catch (error) {
+      alert("No se puede registrar el reactivo");
+    }
   };
 
   return (
     <div className="container mt-4">
 
-      <h2>Reactivos químicos</h2>
+      <h2>Reactivos</h2>
 
-      {}
       <form className="card p-3 mb-4" onSubmit={agregarReactivo}>
+
         <input
           className="form-control mb-2"
           placeholder="Nombre"
@@ -43,42 +60,34 @@ function Reactivos() {
 
         <input
           className="form-control mb-2"
-          placeholder="Existencias"
-          type="number"
+          placeholder="Stock"
           value={stock}
           onChange={(e) => setStock(e.target.value)}
         />
 
         <input
-          className="form-control mb-2"
-          placeholder="Fecha de vencimiento"
           type="date"
+          className="form-control mb-2"
           value={vencimiento}
           onChange={(e) => setVencimiento(e.target.value)}
         />
 
         <button className="btn btn-success">
-          Agregar
+          Registrar
         </button>
+
       </form>
 
-      {}
+      {/* lista */}
       <div className="row">
 
         {reactivos.map((r) => (
           <div className="col-md-4 mb-3" key={r.id}>
             <div className="card p-3 shadow">
-              <h5>{r.nombre}</h5>
-              <p>Disponibles: {r.stock}</p>
 
-              <p>
-                F.V.:{" "}
-                <span className={r.vencimiento < "2026-01-01"
-                  ? "text-danger"
-                  : "text-success"}>
-                  {r.vencimiento}
-                </span>
-              </p>
+              <h5>{r.nombre}</h5>
+              <p>Existencia: {r.stock}</p>
+              <p>Vence: {r.vencimiento}</p>
 
             </div>
           </div>

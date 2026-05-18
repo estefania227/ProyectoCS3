@@ -1,13 +1,3 @@
-/*function App() {
-  return (
-    <div className="container mt-5">
-      <h1>🧪 Sistema Laboratorio Nanomateriales</h1>
-      <p>Proyecto funcionando correctamente</p>
-    </div>
-  );
-}
-
-export default App;*/
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";

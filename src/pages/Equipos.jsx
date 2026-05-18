@@ -1,101 +1,105 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { api } from "../services/api";
 
 function Equipos() {
-  const [equipos, setEquipos] = useState([
-    { id: 1, nombre: "Tubo de ensayo", estado: "Disponible" },
-    { id: 2, nombre: "Microscopio", estado: "En mantenimiento" }
-  ]);
 
+  const [equipos, setEquipos] = useState([]);
   const [nombre, setNombre] = useState("");
+  const [estado, setEstado] = useState("Disponible");
+  const [loading, setLoading] = useState(true);
 
-  const agregarEquipo = (e) => {
-    e.preventDefault();
+  useEffect(() => {
+    cargarEquipos();
+  }, []);
 
-    const nuevo = {
-      id: Date.now(),
-      nombre,
-      estado: "Disponible"
-    };
-
-    setEquipos([...equipos, nuevo]);
-    setNombre("");
+  const cargarEquipos = async () => {
+    try {
+      const res = await api.get("/equipos");
+      setEquipos(res.data);
+    } catch (error) {alert("Error");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const cambiarEstado = (id, estado) => {
-    const actualizados = equipos.map((eq) =>
-      eq.id === id ? { ...eq, estado } : eq
-    );
+  const crearEquipo = async (e) => {
+    e.preventDefault();
 
-    setEquipos(actualizados);
+    try {
+      await api.post("/equipos", {
+        nombre,
+        estado
+      });
+
+      setNombre("");
+      setEstado("Disponible");
+
+      cargarEquipos();
+
+    } catch (error) {
+      alert("No se puede registrar el equipo");
+    }
   };
 
   return (
     <div className="container mt-4">
 
-      <h2>Equipamiento del laboratorio</h2>
+      <h2 className="mb-4">Equipos del laboratorio</h2>
 
-      {/*form*/}
-      <form className="card p-3 mb-4" onSubmit={agregarEquipo}>
+      {}
+      <form className="card p-3 mb-4 shadow" onSubmit={crearEquipo}>
 
         <input
           className="form-control mb-2"
-          placeholder="Nombre"
+          placeholder="Nombre del equipo"
           value={nombre}
           onChange={(e) => setNombre(e.target.value)}
+          required
         />
 
-        <button className="btn btn-success">
-          Agregar equipo
+        <select
+          className="form-control mb-2"
+          value={estado}
+          onChange={(e) => setEstado(e.target.value)}
+        >
+          <option value="Disponible">Disponible</option>
+          <option value="Ocupado">Ocupado</option>
+        </select>
+
+        <button className="btn btn-primary w-100">
+          Registrar
         </button>
 
       </form>
 
-      {/* lista */}
-      <div className="row">
+      {}
+      {loading ? (
+        <p>Listar equipos</p>
+      ) : (
+        <div className="row">
 
-        {equipos.map((e) => (
-          <div className="col-md-4 mb-3" key={e.id}>
-            <div className="card p-3 shadow">
+          {equipos.map((e) => (
+            <div className="col-md-4 mb-3" key={e.id}>
 
-              <h5>{e.nombre}</h5>
+              <div className="card p-3 shadow">
 
-              <p>
-                Estado:{" "}
-                <span className="badge bg-info">
+                <h5>{e.nombre}</h5>
+
+                <span className={`badge ${
+                  e.estado === "Disponible"
+                    ? "bg-success"
+                    : "bg-danger"
+                }`}>
                   {e.estado}
                 </span>
-              </p>
-
-              <div className="d-flex gap-2 flex-wrap">
-
-                <button
-                  className="btn btn-success btn-sm"
-                  onClick={() => cambiarEstado(e.id, "Disponible")}
-                >
-                  Disponible
-                </button>
-
-                <button
-                  className="btn btn-warning btn-sm"
-                  onClick={() => cambiarEstado(e.id, "En mantenimiento")}
-                >
-                  En mantenimiento
-                </button>
-
-                <button
-                  className="btn btn-dark btn-sm"
-                  onClick={() => cambiarEstado(e.id, "Ocupado")}
-                >
-                  Ocupado
-                </button>
 
               </div>
 
             </div>
-          </div>
-        ))}
+          ))}
 
-      </div>
+        </div>
+      )}
 
     </div>
   );

@@ -1,115 +1,230 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { api } from "../services/api";
 
 function Ordenes() {
-  const [ordenes, setOrdenes] = useState([
-    {
-      id: 1,
-      nanomaterial: "Órden 1",
-      estado: "Borrador",
-      equipo: "xxxx"
-    }
-  ]);
 
+  // estados en componentes
+  const [ordenes, setOrdenes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [nanomateriales, setNanomateriales] = useState([]);
+  const [equipos, setEquipos] = useState([]);
+  const [reactivosList, setReactivosList] = useState([]);
   const [nanomaterial, setNanomaterial] = useState("");
   const [equipo, setEquipo] = useState("");
+  const [reactivos, setReactivos] = useState([]);
 
-  const crearOrden = (e) => {
-    e.preventDefault();
+  useEffect(() => {
+    cargarDatos();
+  }, []);
 
-    const nuevaOrden = {
-      id: Date.now(),
-      nanomaterial,
-      equipo,
-      estado: "Borrador"
-    };
+  const cargarDatos = async () => {
+    try {
+      setLoading(true);
 
-    setOrdenes([...ordenes, nuevaOrden]);
+      const [ord, nanos, eq, reac] = await Promise.all([
+        api.get("/ordenes"),
+        api.get("/nanomateriales"),
+        api.get("/equipos"),
+        api.get("/reactivos")
+      ]);
 
-    setNanomaterial("");
-    setEquipo("");
+      setOrdenes(ord.data);
+      setNanomateriales(nanos.data);
+      setEquipos(eq.data);
+      setReactivosList(reac.data);
+
+    } catch (error) {
+      alert("Error");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const cambiarEstado = (id, estado) => {
-    const actualizadas = ordenes.map((o) =>
-      o.id === id ? { ...o, estado } : o
-    );
+  // validar existencia de retroactivos
+  const validarStock = () => {
+    for (let r of reactivos) {
+      const encontrado = reactivosList.find(x => x.nombre === r);
 
-    setOrdenes(actualizadas);
+      if (!encontrado || encontrado.stock <= 0) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+
+  const crearOrden = async (e) => {
+    e.preventDefault();
+
+    if (!validarStock()) {
+      alert("No hay existencia suficiente de retroactivos");
+      return;
+    }
+
+    try {
+      await api.post("/ordenes", {
+        nanomaterial,
+        reactivos,
+        equipo
+      });
+
+      setNanomaterial("");
+      setReactivos([]);
+      setEquipo("");
+
+      cargarDatos();
+
+    } catch (error) {
+      alert("No se puede registrar la orden");
+    }
+  };
+
+  const cambiarEstado = async (id, estado) => {
+    try {
+      await api.put(`/ordenes/${id}/estado?estado=${estado}`);
+      cargarDatos();
+
+    } catch (error) {
+      console.log(error);
+      alert("Error cambiando estado");
+    }
   };
 
   return (
     <div className="container mt-4">
 
-      <h2>Órdenes de síntesis</h2>
+      <h2 className="mb-4">Órdenes de síntesis</h2>
 
-      {/* form */}
-      <form className="card p-3 mb-4" onSubmit={crearOrden}>
-
-        <input
+      { }
+      <form className="card p-3 mb-4 shadow" onSubmit={crearOrden}>
+        { }
+        <select
           className="form-control mb-2"
-          placeholder="Nanomaterial"
           value={nanomaterial}
           onChange={(e) => setNanomaterial(e.target.value)}
-        />
+          required
+        >
+          <option value="">Selecciona un nanomaterial</option>
+          {nanomateriales.map((n) => (
+            <option key={n.id} value={n.nombre}>
+              {n.nombre}
+            </option>
+          ))}
+        </select>
 
-        <input
+        { }
+        <label className="form-label">Selecciona los reactivos:</label>
+        <select
           className="form-control mb-2"
-          placeholder="Equipo"
+          multiple
+          value={reactivos}
+          onChange={(e) =>
+            setReactivos(
+              Array.from(e.target.selectedOptions, option => option.value)
+            )
+          } required>
+
+          {reactivosList.map((r) => (
+            <option key={r.id} value={r.nombre}>
+              {r.nombre} (stock: {r.stock})
+            </option>
+          ))}
+        </select>
+
+        { }
+        <select
+          className="form-control mb-2"
           value={equipo}
           onChange={(e) => setEquipo(e.target.value)}
-        />
+          required
+        >
+          <option value="">Selecciona un equipo</option>
+          {equipos.map((e) => (
+            <option key={e.id} value={e.nombre}>
+              {e.nombre}
+            </option>
+          ))}
+        </select>
 
-        <button className="btn btn-success">
-          Crear orden
+        <button className="btn btn-primary w-100">
+          Registrar
         </button>
 
       </form>
 
-      {/* lista */}
-      <div className="row">
+      { }
+      {loading ? (
+        <p>Listar órdenes</p>
+      ) : (
+        <div className="row">
 
-        {ordenes.map((o) => (
-          <div className="col-md-6 mb-3" key={o.id}>
-            <div className="card p-3 shadow">
+          {ordenes.map((o) => (
+            <div className="col-md-4 mb-3" key={o.id}>
 
-              <h5>{o.nanomaterial}</h5>
+              <div className="card shadow p-3">
+                <p><b>Nanomarierial1:</b> {o.nanomaterial}</p>
+                <p><b>Reactivos:</b></p>
+                <ul>
+                  {o.reactivos?.map((r, i) => (
+                    <li key={i}>{r}</li>
+                  ))}
+                </ul>
+                <p><b>Equipo:</b> {o.equipo}</p>
 
-              <p>
-                Estado:{" "}
-                <span className="badge bg-warning text-dark">
+
+                {}
+                <span className={`badge ${o.estado === "Borrador"
+                    ? "bg-secondary"
+                    : o.estado === "Aprobada"
+                      ? "bg-primary"
+                      : o.estado === "En proceso"
+                        ? "bg-warning text-dark"
+                        : o.estado === "Cancelada"
+                          ? "bg-danger"
+                          : "bg-success"
+                  }`}>
                   {o.estado}
                 </span>
-              </p>
 
-              <p>Equipo: {o.equipo}</p>
+                <div className="d-flex gap-2 mt-2 flex-wrap">
 
-              {/* estado orden */}
-              <div className="d-flex gap-2">
+                  <button
+                    className="btn btn-success btn-sm"
+                    onClick={() => cambiarEstado(o.id, "Aprobada")}
+                  >
+                    Aprobar
+                  </button>
 
-                <button
-                  className="btn btn-success btn-sm"
-                  onClick={() => cambiarEstado(o.id, "Aprobada")}
-                >
-                  Aprobar
-                </button>
+                  <button
+                    className="btn btn-primary btn-sm"
+                    onClick={() => cambiarEstado(o.id, "En proceso")}
+                  >
+                    Proceso
+                  </button>
 
-                <button
-                  className="btn btn-primary btn-sm"
-                  onClick={() => cambiarEstado(o.id, "En proceso")}
-                >Procesar</button>
+                  <button
+                    className="btn btn-dark btn-sm"
+                    onClick={() => cambiarEstado(o.id, "Completada")}
+                  >
+                    Completar
+                  </button>
 
-                <button
-                  className="btn btn-dark btn-sm"
-                  onClick={() => cambiarEstado(o.id, "Completada")}
-                >Completar</button>
+                  <button
+                    className="btn btn-danger btn-sm"
+                    onClick={() => cambiarEstado(o.id, "Cancelada")}
+                  >
+                    Cancelar
+                  </button>
+
+                </div>
 
               </div>
 
             </div>
-          </div>
-        ))}
+          ))}
 
-      </div>
+        </div>
+      )}
 
     </div>
   );
