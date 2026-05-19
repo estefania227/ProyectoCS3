@@ -1,49 +1,61 @@
 import { useState } from "react";
+import { api } from "../services/api";
 import { useNavigate } from "react-router-dom";
 
 function Login() {
-  const [email, setEmail] = useState("");
+
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
 
-    if (email && password) {
-      localStorage.setItem("user", JSON.stringify({email}));
-      navigate("/dashboard");
+    try {
+      const res = await api.post("/login", {
+        username,
+        password
+      });
+
+      if (res.data.ok) {
+        localStorage.setItem("token", res.data.token);
+        navigate("/dashboard");
+      } else {
+        alert("Datos incorrectos");
+      }
+
+    } catch (error) {
+      alert("Error");
     }
   };
 
   return (
     <div className="container mt-5">
-      <div className="row justify-content-center">
-        <div className="col-md-4">
-        <h3>Laboratorio</h3>
-          <form onSubmit={handleLogin}>
 
-            <input
-              className="form-control mb-2"
-              placeholder="Correo electrónico"
-              onChange={(e) => setEmail(e.target.value)}
-            />
+      <h2>Laboratorio</h2>
 
-            <input
-              type="password"
-              className="form-control mb-3"
-              placeholder="Contraseña"
-              onChange={(e) => setPassword(e.target.value)}
-            />
+      <form onSubmit={handleLogin} className="card p-3">
 
-            <button className="btn btn-primary w-100">
-              Iniciar sesión
-            </button>
+        <input
+          className="form-control mb-2"
+          placeholder="Usuario"
+          onChange={(e) => setUsername(e.target.value)}
+        />
 
-          </form>
+        <input
+          type="password"
+          className="form-control mb-2"
+          placeholder="Contraseña"
+          onChange={(e) => setPassword(e.target.value)}
+        />
 
-        </div>
-      </div>
+        <button className="btn btn-primary">
+          Entrar
+        </button>
+
+      </form>
+
     </div>
   );
 }
