@@ -60,7 +60,7 @@ function Reactivos() {
 
         <input
           className="form-control mb-2"
-          placeholder="Stock"
+          placeholder="Existencia"
           value={stock}
           onChange={(e) => setStock(e.target.value)}
         />
@@ -87,7 +87,7 @@ function Reactivos() {
 
               <h5>{r.nombre}</h5>
               <p>Existencia: {r.stock}</p>
-              <p>Vence: {r.vencimiento}</p>
+              <p>F.V.: {r.vencimiento}</p>
 
             </div>
           </div>
