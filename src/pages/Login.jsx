@@ -19,7 +19,9 @@ function Login() {
       });
 
       if (res.data.ok) {
+        localStorage.setItem("user","admin");
         localStorage.setItem("token", res.data.token);
+        
         navigate("/dashboard");
       } else {
         alert("Datos incorrectos");
